@@ -41,7 +41,7 @@ npx -y @smithery/cli install @HintServices/mcp-trello --client typescript
 ### Manual Installation
 
 ```bash
-npm install @HintServices/mcp-trello
+pnpm add @HintServices/mcp-trello
 ```
 
 ## Configuration
@@ -55,9 +55,9 @@ Add the server to your MCP settings file with the following configuration:
       "command": "npx",
       "args": ["-y", "@HintServices/mcp-trello"],
       "env": {
-        "TRELLO_API_KEY": "your-api-key",
-        "TRELLO_TOKEN": "your-token",
-        "TRELLO_BOARD_ID": "your-board-id"
+        "trelloApiKey": "your-api-key",
+        "trelloToken": "your-token",
+        "trelloBoardId": "your-board-id"
       }
     }
   }
@@ -66,120 +66,160 @@ Add the server to your MCP settings file with the following configuration:
 
 ### Required Environment Variables
 
-- `TRELLO_API_KEY`: Your Trello API key (get from https://trello.com/app-key)
-- `TRELLO_TOKEN`: Your Trello token (generate using your API key)
-- `TRELLO_BOARD_ID`: ID of the Trello board to interact with (found in board URL)
+- `trelloApiKey`: Your Trello API key (get from https://trello.com/app-key)
+- `trelloToken`: Your Trello token (generate using your API key)
+- `trelloBoardId`: ID of the Trello board to interact with (found in board URL)
 
 ## Available Tools
 
-### get_cards_by_list_id
+### getCardsByList
+
 Fetch all cards from a specific list.
 
 ```typescript
 {
-  name: 'get_cards_by_list_id',
+  name: 'getCardsByList',
   arguments: {
     listId: string  // ID of the Trello list
   }
 }
 ```
 
-### get_lists
+### getLists
+
 Retrieve all lists from the configured board.
 
 ```typescript
 {
-  name: 'get_lists',
+  name: 'getLists',
   arguments: {}
 }
 ```
 
-### get_recent_activity
+### getRecentActivity
+
 Fetch recent activity on the board.
 
 ```typescript
 {
-  name: 'get_recent_activity',
+  name: 'getRecentActivity',
   arguments: {
     limit?: number  // Optional: Number of activities to fetch (default: 10)
   }
 }
 ```
 
-### add_card_to_list
+### addCard
+
 Add a new card to a specified list.
 
 ```typescript
 {
-  name: 'add_card_to_list',
+  name: 'addCard',
   arguments: {
     listId: string,       // ID of the list to add the card to
     name: string,         // Name of the card
     description?: string, // Optional: Description of the card
-    dueDate?: string,    // Optional: Due date (ISO 8601 format)
-    labels?: string[]    // Optional: Array of label IDs
+    dueDate?: string,     // Optional: Due date (ISO 8601 format)
+    labels?: string[]     // Optional: Array of label IDs
   }
 }
 ```
 
-### update_card_details
+### updateCard
+
 Update an existing card's details.
 
 ```typescript
 {
-  name: 'update_card_details',
+  name: 'updateCard',
   arguments: {
     cardId: string,       // ID of the card to update
     name?: string,        // Optional: New name for the card
     description?: string, // Optional: New description
-    dueDate?: string,    // Optional: New due date (ISO 8601 format)
-    labels?: string[]    // Optional: New array of label IDs
+    dueDate?: string,     // Optional: New due date (ISO 8601 format)
+    startDate?: string,   // Optional: Start date (ISO 8601 format)
+    labels?: string[],    // Optional: New array of label IDs
+    position?: string     // Optional: Card position ('top', 'bottom', or a number)
   }
 }
 ```
 
-### archive_card
+### moveCard
+
+Move a card to a different list or board.
+
+```typescript
+{
+  name: 'moveCard',
+  arguments: {
+    cardId: string,     // ID of the card to move
+    listId: string,     // ID of the destination list
+    boardId?: string    // Optional: ID of the destination board
+  }
+}
+```
+
+### changeCardMembers
+
+Add or remove members from a card.
+
+```typescript
+{
+  name: 'changeCardMembers',
+  arguments: {
+    cardId: string,    // ID of the card
+    members: string[]  // Array of member IDs to assign to the card
+  }
+}
+```
+
+### archiveCard
+
 Send a card to the archive.
 
 ```typescript
 {
-  name: 'archive_card',
+  name: 'archiveCard',
   arguments: {
     cardId: string  // ID of the card to archive
   }
 }
 ```
 
-### add_list_to_board
+### addList
+
 Add a new list to the board.
 
 ```typescript
 {
-  name: 'add_list_to_board',
+  name: 'addList',
   arguments: {
     name: string  // Name of the new list
   }
 }
 ```
 
-### archive_list
+### archiveList
+
 Send a list to the archive.
 
 ```typescript
 {
-  name: 'archive_list',
+  name: 'archiveList',
   arguments: {
     listId: string  // ID of the list to archive
   }
 }
 ```
 
-### get_my_cards
+### getMyCards
+
 Fetch all cards assigned to the current user.
 
 ```typescript
 {
-  name: 'get_my_cards',
+  name: 'getMyCards',
   arguments: {}
 }
 ```
@@ -187,6 +227,7 @@ Fetch all cards assigned to the current user.
 ## Rate Limiting
 
 The server implements a token bucket algorithm for rate limiting to comply with Trello's API limits:
+
 - 300 requests per 10 seconds per API key
 - 100 requests per 10 seconds per token
 
@@ -195,6 +236,7 @@ Rate limiting is handled automatically, and requests will be queued if limits ar
 ## Error Handling
 
 The server provides detailed error messages for various scenarios:
+
 - Invalid input parameters
 - Rate limit exceeded
 - API authentication errors
@@ -206,37 +248,39 @@ The server provides detailed error messages for various scenarios:
 ### Prerequisites
 
 - Node.js v18 or higher
-- npm v7 or higher
-- VS Code with Dev Containers extension (optional, but recommended)
+- pnpm v7 or higher
 
 ### Setup
 
 1. Clone the repository
+
 ```bash
 git clone https://github.com/HintServices/mcp-trello.git
 cd mcp-trello
 ```
 
 2. Install dependencies
+
 ```bash
-npm install
+pnpm install
 ```
 
 3. Build the project
+
 ```bash
-npm run build
+pnpm run build
 ```
 
 ### Running in Development Mode
 
 ```bash
-npm run watch
+pnpm run watch
 ```
 
 ### Running with Debugging
 
 ```bash
-npm run inspector
+pnpm run inspector
 ```
 
 ## Contributing

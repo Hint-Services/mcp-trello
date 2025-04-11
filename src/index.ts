@@ -14,8 +14,19 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { registerCalculatorTool } from "./examples/calculator.js";
-import { registerRestApiTool } from "./examples/rest-api.js";
+import { TrelloClient } from "./trello/client.js";
+
+const apiKey = process.env.trelloApiKey;
+const token = process.env.trelloToken;
+const boardId = process.env.trelloBoardId;
+
+if (!apiKey || !token || !boardId) {
+  throw new Error(
+    "env TRELLO_API_KEY, TRELLO_TOKEN, and TRELLO_BOARD_ID environment variables are required"
+  );
+}
+
+const trelloClient = new TrelloClient({ apiKey, token, boardId });
 
 /**
  * Create a new MCP server instance with full capabilities
@@ -48,8 +59,7 @@ process.on("uncaughtException", (error: Error) => {
 
 // Register example tools
 try {
-  registerCalculatorTool(server);
-  registerRestApiTool(server);
+  trelloClient.registerTrelloTools(server);
   logMessage("info", "Successfully registered all tools");
 } catch (error) {
   logMessage(
