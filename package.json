@@ -1,6 +1,6 @@
 {
   "name": "mcp-trello",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A Model Context Protocol server for Trello",
   "author": {
     "name": "Ben Hofferber",
@@ -9,10 +9,10 @@
       "bluesky": "https://bsky.app/profile/benhofferber.com"
     }
   },
-  "private": true,
+  "private": false,
   "type": "module",
   "bin": {
-    "mcp-trello": "./build/index.js"
+    "mcp-trello": "build/index.js"
   },
   "files": [
     "build"
@@ -49,5 +49,13 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hint-services/mcp-trello.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hint-services/mcp-trello/issues"
+  },
+  "homepage": "https://github.com/hint-services/mcp-trello#readme"
 }

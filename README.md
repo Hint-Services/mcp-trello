@@ -1,4 +1,5 @@
 [![smithery badge](https://smithery.ai/badge/@Hint-Services/mcp-trello)](https://smithery.ai/server/@Hint-Services/mcp-trello)
+[![npm version](https://img.shields.io/npm/v/mcp-trello)](https://www.npmjs.com/package/mcp-trello)
 
 # MCP Trello
 
@@ -83,7 +84,7 @@ npx -y @smithery/cli install @Hint-Services/mcp-trello --client typescript
 ### Manual Installation
 
 ```bash
-pnpm add @Hint-Services/mcp-trello
+pnpm add mcp-trello
 ```
 
 ## Configuration

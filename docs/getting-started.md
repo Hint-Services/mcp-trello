@@ -52,7 +52,7 @@ npx -y @smithery/cli install @Hint-Services/mcp-trello --client typescript
 If you prefer to install manually:
 
 ```bash
-npm install @Hint-Services/mcp-trello
+npm install mcp-trello
 ```
 
 ## Configuration
