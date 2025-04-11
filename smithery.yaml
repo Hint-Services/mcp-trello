@@ -1,0 +1,56 @@
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+
+name: "@HintServices/mcp-trello"
+description: "A TypeScript-based Model Context Protocol (MCP) server for Trello"
+version: "0.1.0"
+
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    title: "MCP Trello Configuration"
+    description: "Configuration options for the MCP Trello server"
+    properties:
+      calculator:
+        type: object
+        title: "Calculator Tool"
+        description: "Configuration for the calculator tool"
+        properties:
+          enabled:
+            type: boolean
+            default: true
+            description: "Enable/disable the calculator tool"
+      restApi:
+        type: object
+        title: "REST API Tool"
+        description: "Configuration for the REST API tool"
+        properties:
+          enabled:
+            type: boolean
+            default: true
+            description: "Enable/disable the REST API tool"
+          maxRetries:
+            type: integer
+            default: 3
+            minimum: 1
+            maximum: 5
+            description: "Maximum number of retries for API calls"
+    required: []
+  commandFunction: |-
+    (config) => ({
+      command: 'node',
+      args: ['build/index.js'],
+      env: {
+        NODE_ENV: 'production',
+        CALCULATOR_ENABLED: config.calculator?.enabled?.toString() || 'true',
+        REST_API_ENABLED: config.restApi?.enabled?.toString() || 'true',
+        REST_API_MAX_RETRIES: config.restApi?.maxRetries?.toString() || '3'
+      }
+    })
+
+clients:
+  - claude
+  - cursor
+  - windsurf
+  - cline
+  - typescript
