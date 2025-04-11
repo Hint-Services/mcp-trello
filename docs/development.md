@@ -15,7 +15,7 @@ This document contains detailed information for developers working with the MCP 
 1. Clone the repository
 
 ```bash
-git clone https://github.com/HintServices/mcp-trello.git
+git clone https://github.com/Hint-Services/mcp-trello.git
 cd mcp-trello
 ```
 

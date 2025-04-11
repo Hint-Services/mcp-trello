@@ -32,19 +32,19 @@ Smithery provides the easiest way to install and configure MCP Trello:
 
 ```bash
 # For Claude
-npx -y @smithery/cli install @HintServices/mcp-trello --client claude
+npx -y @smithery/cli install @Hint-Services/mcp-trello --client claude
 
 # For Cursor
-npx -y @smithery/cli install @HintServices/mcp-trello --client cursor
+npx -y @smithery/cli install @Hint-Services/mcp-trello --client cursor
 
 # For Windsurf
-npx -y @smithery/cli install @HintServices/mcp-trello --client windsurf
+npx -y @smithery/cli install @Hint-Services/mcp-trello --client windsurf
 
 # For Cline
-npx -y @smithery/cli install @HintServices/mcp-trello --client cline
+npx -y @smithery/cli install @Hint-Services/mcp-trello --client cline
 
 # For TypeScript
-npx -y @smithery/cli install @HintServices/mcp-trello --client typescript
+npx -y @smithery/cli install @Hint-Services/mcp-trello --client typescript
 ```
 
 ### Manual Installation
@@ -52,7 +52,7 @@ npx -y @smithery/cli install @HintServices/mcp-trello --client typescript
 If you prefer to install manually:
 
 ```bash
-npm install @HintServices/mcp-trello
+npm install @Hint-Services/mcp-trello
 ```
 
 ## Configuration
@@ -76,7 +76,7 @@ Add the Trello server to your MCP settings file:
   "mcpServers": {
     "trello": {
       "command": "npx",
-      "args": ["-y", "@HintServices/mcp-trello"],
+      "args": ["-y", "@Hint-Services/mcp-trello"],
       "env": {
         "TRELLO_API_KEY": "${TRELLO_API_KEY}",
         "TRELLO_TOKEN": "${TRELLO_TOKEN}",
@@ -94,7 +94,7 @@ Once configured, your AI agent can use the Trello tools through the MCP interfac
 ### For Claude
 
 ```
-You have access to a Trello board through the MCP Trello tools. 
+You have access to a Trello board through the MCP Trello tools.
 Please help me manage my board by:
 1. Showing me all the lists
 2. Showing cards in the "To Do" list
@@ -119,27 +119,29 @@ You can add new cards with add_card_to_list.
 const lists = await mcp.invoke("trello", "get_lists", {});
 
 // Find the "To Do" list
-const todoList = lists.find(list => list.name === "To Do");
+const todoList = lists.find((list) => list.name === "To Do");
 
 // Add a new task
 await mcp.invoke("trello", "add_card_to_list", {
   listId: todoList.id,
   name: "Complete project documentation",
-  description: "Finish writing all documentation files for the project"
+  description: "Finish writing all documentation files for the project",
 });
 
 // Get all cards in the To Do list
 const todoCards = await mcp.invoke("trello", "get_cards_by_list_id", {
-  listId: todoList.id
+  listId: todoList.id,
 });
 
 // Mark a task as complete (by moving to Done list)
-const doneList = lists.find(list => list.name === "Done");
-const taskToComplete = todoCards.find(card => card.name === "Complete project documentation");
+const doneList = lists.find((list) => list.name === "Done");
+const taskToComplete = todoCards.find(
+  (card) => card.name === "Complete project documentation"
+);
 
 await mcp.invoke("trello", "update_card_details", {
   cardId: taskToComplete.id,
-  idList: doneList.id
+  idList: doneList.id,
 });
 ```
 

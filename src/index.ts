@@ -22,7 +22,7 @@ const boardId = process.env.trelloBoardId;
 
 if (!apiKey || !token || !boardId) {
   throw new Error(
-    "env TRELLO_API_KEY, TRELLO_TOKEN, and TRELLO_BOARD_ID environment variables are required"
+    "env trelloApiKey, trelloToken, and trelloBoardId environment variables are required"
   );
 }
 

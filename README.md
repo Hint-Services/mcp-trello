@@ -1,4 +1,4 @@
-[![smithery badge](https://smithery.ai/badge/@HintServices/mcp-trello)](https://smithery.ai/server/@HintServices/mcp-trello)
+[![smithery badge](https://smithery.ai/badge/@Hint-Services/mcp-trello)](https://smithery.ai/server/@Hint-Services/mcp-trello)
 
 # MCP Trello
 
@@ -65,25 +65,25 @@ The easiest way to install MCP Trello is using Smithery:
 
 ```bash
 # For Claude
-npx -y @smithery/cli install @HintServices/mcp-trello --client claude
+npx -y @smithery/cli install @Hint-Services/mcp-trello --client claude
 
 # For Cursor
-npx -y @smithery/cli install @HintServices/mcp-trello --client cursor
+npx -y @smithery/cli install @Hint-Services/mcp-trello --client cursor
 
 # For Windsurf
-npx -y @smithery/cli install @HintServices/mcp-trello --client windsurf
+npx -y @smithery/cli install @Hint-Services/mcp-trello --client windsurf
 
 # For Cline
-npx -y @smithery/cli install @HintServices/mcp-trello --client cline
+npx -y @smithery/cli install @Hint-Services/mcp-trello --client cline
 
 # For TypeScript
-npx -y @smithery/cli install @HintServices/mcp-trello --client typescript
+npx -y @smithery/cli install @Hint-Services/mcp-trello --client typescript
 ```
 
 ### Manual Installation
 
 ```bash
-pnpm add @HintServices/mcp-trello
+pnpm add @Hint-Services/mcp-trello
 ```
 
 ## Configuration
@@ -95,7 +95,7 @@ Add the server to your MCP settings file with the following configuration:
   "mcpServers": {
     "trello": {
       "command": "npx",
-      "args": ["-y", "@HintServices/mcp-trello"],
+      "args": ["-y", "@Hint-Services/mcp-trello"],
       "env": {
         "trelloApiKey": "your-api-key",
         "trelloToken": "your-token",

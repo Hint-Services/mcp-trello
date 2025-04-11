@@ -1,6 +1,6 @@
 # Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
 
-name: "@HintServices/mcp-trello"
+name: "@Hint-Services/mcp-trello"
 description: "A TypeScript-based Model Context Protocol (MCP) server for Trello"
 version: "0.1.1"
 
@@ -11,30 +11,25 @@ startCommand:
     title: "MCP Trello Configuration"
     description: "Configuration options for the MCP Trello server"
     properties:
-      trello:
-        type: object
-        title: "Trello API Configuration"
-        description: "Configuration for the Trello API"
-        properties:
-          apiKey:
-            type: string
-            description: "Your Trello API key (get from https://trello.com/app-key)"
-          token:
-            type: string
-            description: "Your Trello token (generate using your API key)"
-          boardId:
-            type: string
-            description: "ID of the Trello board to interact with (found in board URL)"
-    required: ["trello"]
+      apiKey:
+        type: string
+        description: "Your Trello API key (get from https://trello.com/app-key)"
+      token:
+        type: string
+        description: "Your Trello token (generate using your API key)"
+      boardId:
+        type: string
+        description: "ID of the Trello board to interact with (found in board URL)"
+    required: ["apiKey", "token", "boardId"]
   commandFunction: |-
     (config) => ({
       command: 'node',
       args: ['build/index.js'],
       env: {
         NODE_ENV: 'production',
-        trelloApiKey: config.trello?.apiKey || '',
-        trelloToken: config.trello?.token || '',
-        trelloBoardId: config.trello?.boardId || '',
+        trelloApiKey: config.apiKey || '',
+        trelloToken: config.token || '',
+        trelloBoardId: config.boardId || '',
       }
     })
 
