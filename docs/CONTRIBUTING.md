@@ -35,9 +35,12 @@ We recommend using VS Code with the Dev Containers extension for the best develo
 
 ### Development Scripts
 
-- **Build**: `pnpm run build` - Compiles TypeScript and sets permissions
-- **Watch mode**: `pnpm run watch` - Automatically recompiles on changes
-- **Debug mode**: `pnpm run inspector` - Runs with inspector for debugging
+- **HTTP Streaming Development**: `npm run dev` - Modern development with hot reloading
+- **Traditional Development**: `npm run dev:stdio` - stdio development with inspector
+- **Build HTTP**: `npm run build` or `npm run build:http` - Builds HTTP streaming version
+- **Build stdio**: `npm run build:stdio` - Compiles TypeScript for stdio compatibility
+- **Watch mode**: `npm run watch` - Automatically recompiles TypeScript on changes
+- **Debug mode**: `npm run inspector` - Runs with MCP inspector for debugging
 
 ## Development Workflow
 
@@ -57,9 +60,12 @@ We recommend using VS Code with the Dev Containers extension for the best develo
 
 2. **Development Scripts**
 
-   - Build the project: `pnpm run build`
-   - Watch mode for development: `pnpm run watch`
-   - Debug mode with inspector: `pnpm run inspector`
+   - HTTP streaming development: `npm run dev`
+   - Traditional stdio development: `npm run dev:stdio` 
+   - Build HTTP streaming version: `npm run build` or `npm run build:http`
+   - Build stdio version: `npm run build:stdio`
+   - Watch mode for development: `npm run watch`
+   - Debug mode with inspector: `npm run inspector`
 
 3. **Testing Your Changes**
 
@@ -86,10 +92,23 @@ We recommend using VS Code with the Dev Containers extension for the best develo
 
    ### Testing with Cursor
 
+   #### HTTP Streaming (Recommended)
+   
+   1. Build and start HTTP streaming version:
+
+      ```bash
+      npm run build:http
+      npm run start:http
+      ```
+
+   2. Configure in Cursor for HTTP streaming interface (refer to Smithery documentation)
+
+   #### Traditional stdio Method
+
    1. Build your development version:
 
       ```bash
-      pnpm run build
+      npm run build:stdio
       ```
 
    2. Configure in Cursor:
@@ -109,10 +128,23 @@ We recommend using VS Code with the Dev Containers extension for the best develo
 
    ### Testing with Claude
 
+   #### HTTP Streaming (Recommended)
+
+   1. Build and start HTTP streaming version:
+
+      ```bash
+      npm run build:http
+      npm run start:http
+      ```
+
+   2. Claude Desktop will automatically detect the HTTP streaming interface (refer to Smithery documentation for Claude integration)
+
+   #### Traditional stdio Method
+
    1. Build your development version:
 
       ```bash
-      pnpm run build
+      npm run build:stdio
       ```
 
    2. Configure Claude Desktop:
@@ -145,7 +177,7 @@ We recommend using VS Code with the Dev Containers extension for the best develo
    The inspector is a powerful tool for debugging:
 
    ```bash
-   pnpm run inspector
+   npm run inspector
    ```
 
    This provides:
@@ -154,6 +186,21 @@ We recommend using VS Code with the Dev Containers extension for the best develo
    - Tool execution tracing
    - Schema validation feedback
    - Performance metrics
+
+   ### HTTP Streaming Development
+
+   For modern development workflow:
+
+   ```bash
+   npm run dev
+   ```
+
+   This provides:
+
+   - Hot reloading on code changes
+   - HTTP streaming interface
+   - Better development performance
+   - Automatic server restart
 
 7. **Submitting Changes**
    - Push your changes: `git push origin feature/your-feature`

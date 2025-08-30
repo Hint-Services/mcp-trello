@@ -41,3 +41,6 @@ coverage/
 # MCP specific
 .awolf
 claude_desktop_config.json
+
+# Smithery build output
+.smithery/index.cjs

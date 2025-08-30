@@ -31,16 +31,46 @@ pnpm install
 pnpm run build
 ```
 
-### Running in Development Mode
+### Development Commands
 
 ```bash
-pnpm run watch
+# HTTP streaming development with hot reloading (recommended)
+npm run dev
+
+# Traditional stdio development mode
+npm run dev:stdio
+
+# Watch TypeScript compilation only
+npm run watch
+
+# Run with MCP inspector for debugging
+npm run inspector
 ```
 
-### Running with Debugging
+### Build Commands
 
 ```bash
-pnpm run inspector
+# Build HTTP streaming version (default)
+npm run build
+
+# Build HTTP streaming version explicitly
+npm run build:http
+
+# Build stdio version for backwards compatibility
+npm run build:stdio
+```
+
+### Deployment Commands
+
+```bash
+# Start HTTP streaming server (default)
+npm start
+
+# Start HTTP streaming server explicitly
+npm run start:http
+
+# Start stdio server (backwards compatibility)
+npm run start:stdio
 ```
 
 ## TypeScript Implementation
@@ -73,26 +103,59 @@ await server.connect(transport);
 mcp-trello/
 ├── .devcontainer/        # Dev container configuration
 │   └── devcontainer.json
+├── .smithery/            # Smithery build output
+│   └── index.cjs         # HTTP streaming bundle
+├── build/                # TypeScript build output (stdio)
+│   ├── index.js          # Compiled main entry point
+│   ├── index.d.ts        # Type definitions
+│   └── trello/           # Compiled Trello modules
 ├── src/
-│   ├── index.ts         # MCP Server main entry point
-│   └── trello/          # Trello API integration
+│   ├── index.ts          # MCP Server with dual interface support
+│   └── trello/           # Trello API integration
 │       ├── client.ts     # Trello client implementation
 │       ├── rate-limiter.ts # Rate limiting functionality
 │       └── types.ts      # TypeScript type definitions
 ├── docs/                 # Documentation
-├── package.json         # Project configuration
-└── tsconfig.json        # TypeScript configuration
+├── package.json          # Project configuration with dual scripts
+├── smithery.yaml         # Smithery configuration
+└── tsconfig.json         # TypeScript configuration
 ```
 
 ## Development Scripts
 
-- **Build the project**:
+- **HTTP Streaming Development** (Recommended):
+
+  ```bash
+  npm run dev
+  ```
+
+  Starts the development server with HTTP streaming interface and hot reloading using Smithery CLI.
+
+- **Traditional Development**:
+
+  ```bash
+  npm run dev:stdio
+  ```
+
+  Runs TypeScript watch mode and MCP inspector for traditional stdio development.
+
+- **Build HTTP streaming**:
 
   ```bash
   npm run build
+  # or explicitly
+  npm run build:http
   ```
 
-  Compiles your TypeScript source and sets file permissions for the main entry point.
+  Builds the HTTP streaming version using Smithery CLI, creating `.smithery/index.cjs`.
+
+- **Build stdio version**:
+
+  ```bash
+  npm run build:stdio
+  ```
+
+  Compiles TypeScript source to `build/` directory and sets file permissions for stdio compatibility.
 
 - **Watch mode**:
 
@@ -353,24 +416,47 @@ describe("Calculator Tool", () => {
 
 MCP supports multiple transport protocols:
 
-### stdio Transport
+### HTTP Streaming Interface (Recommended)
+
+The HTTP streaming interface is the modern approach using Smithery:
+
+```typescript
+// Export factory function for HTTP streaming
+export default function createServer({
+  config,
+}: {
+  config: z.infer<typeof configSchema>;
+}) {
+  const server = new McpServer({
+    name: "mcp-trello",
+    version: "0.2.0",
+    capabilities: {
+      tools: {},
+      resources: {},
+      prompts: {},
+      streaming: true,
+    },
+  });
+  
+  // Initialize and register tools
+  const trelloClient = new TrelloClient(config);
+  trelloClient.registerTrelloTools(server);
+  
+  return server;
+}
+```
+
+### stdio Transport (Legacy)
 
 ```typescript
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
-const transport = new StdioServerTransport();
-await server.connect(transport);
-```
-
-### WebSocket Transport
-
-```typescript
-import { WebSocketServerTransport } from "@modelcontextprotocol/sdk/server/websocket.js";
-
-const transport = new WebSocketServerTransport({
-  port: 3000,
-});
-await server.connect(transport);
+// Only runs if file is executed directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const server = createServer({ config });
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+}
 ```
 
 ### Custom Transport

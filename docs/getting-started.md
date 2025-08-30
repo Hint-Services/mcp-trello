@@ -55,6 +55,25 @@ If you prefer to install manually:
 npm install mcp-trello
 ```
 
+### Development Installation
+
+For development with HTTP streaming interface:
+
+```bash
+# Clone the repository
+git clone https://github.com/Hint-Services/mcp-trello.git
+cd mcp-trello
+
+# Install dependencies
+pnpm install
+
+# Build HTTP streaming version
+npm run build:http
+
+# Start development server
+npm run dev
+```
+
 ## Configuration
 
 ### Environment Variables
@@ -69,7 +88,13 @@ TRELLO_BOARD_ID=your_board_id
 
 ### MCP Settings File
 
-Add the Trello server to your MCP settings file:
+#### HTTP Streaming Interface (Default)
+
+For the modern HTTP streaming interface, Smithery handles the configuration automatically when you use the Smithery installation method.
+
+#### Traditional stdio Interface
+
+For traditional stdio interface, add the Trello server to your MCP settings file:
 
 ```json
 {
@@ -85,6 +110,20 @@ Add the Trello server to your MCP settings file:
     }
   }
 }
+```
+
+#### Development Configuration
+
+For local development with HTTP streaming:
+
+```bash
+# Set environment variables
+export TRELLO_API_KEY="your-api-key"
+export TRELLO_TOKEN="your-token"
+export TRELLO_BOARD_ID="your-board-id"
+
+# Start development server
+npm run dev
 ```
 
 ## Using with AI Agents

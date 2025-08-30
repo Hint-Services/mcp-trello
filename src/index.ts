@@ -1,12 +1,8 @@
 /**
- * MCP Server Starter Template
+ * MCP Server for Trello Integration
  *
- * This is a reference implementation of a Model Context Protocol (MCP) server.
- * It demonstrates best practices for:
- * - Server initialization and configuration
- * - Tool registration and management
- * - Error handling and logging
- * - Resource cleanup
+ * This is a Model Context Protocol (MCP) server that provides tools for interacting with Trello.
+ * It supports both stdio and HTTP streaming interfaces.
  *
  * For more information about MCP, visit:
  * https://modelcontextprotocol.io
@@ -14,33 +10,41 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
 import { TrelloClient } from "./trello/client.js";
 
-const apiKey = process.env.trelloApiKey;
-const token = process.env.trelloToken;
-const boardId = process.env.trelloBoardId;
-
-if (!apiKey || !token || !boardId) {
-  throw new Error(
-    "env trelloApiKey, trelloToken, and trelloBoardId environment variables are required"
-  );
-}
-
-const trelloClient = new TrelloClient({ apiKey, token, boardId });
-
-/**
- * Create a new MCP server instance with full capabilities
- */
-const server = new McpServer({
-  name: "mcp-trello",
-  version: "0.1.1",
-  capabilities: {
-    tools: {},
-    resources: {},
-    prompts: {},
-    streaming: true,
-  },
+// Configuration schema for HTTP streaming interface
+export const configSchema = z.object({
+  apiKey: z.string().describe("Trello API key from https://trello.com/app-key"),
+  token: z.string().describe("Trello token generated using your API key"),
+  boardId: z
+    .string()
+    .describe("ID of the Trello board to interact with (found in board URL)"),
 });
+
+// Factory function for HTTP streaming interface
+export default function createServer({
+  config,
+}: {
+  config: z.infer<typeof configSchema>;
+}) {
+  const server = new McpServer({
+    name: "mcp-trello",
+    version: "0.2.0",
+    capabilities: {
+      tools: {},
+      resources: {},
+      prompts: {},
+      streaming: true,
+    },
+  });
+
+  // Initialize Trello client and register tools
+  const trelloClient = new TrelloClient(config);
+  trelloClient.registerTrelloTools(server);
+
+  return server;
+}
 
 /**
  * Helper function to send log messages to the client
@@ -49,56 +53,28 @@ function logMessage(level: "info" | "warn" | "error", message: string) {
   console.error(`[${level.toUpperCase()}] ${message}`);
 }
 
-/**
- * Set up error handling for the server
- */
-process.on("uncaughtException", (error: Error) => {
-  logMessage("error", `Uncaught error: ${error.message}`);
-  console.error("Server error:", error);
-});
-
-// Register example tools
-try {
-  trelloClient.registerTrelloTools(server);
-  logMessage("info", "Successfully registered all tools");
-} catch (error) {
-  logMessage(
-    "error",
-    `Failed to register tools: ${
-      error instanceof Error ? error.message : "Unknown error"
-    }`
-  );
-  process.exit(1);
-}
-
-/**
- * Set up proper cleanup on process termination
- */
-async function cleanup() {
-  try {
-    await server.close();
-    logMessage("info", "Server shutdown completed");
-  } catch (error) {
-    logMessage(
-      "error",
-      `Error during shutdown: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
-  } finally {
-    process.exit(0);
-  }
-}
-
-// Handle termination signals
-process.on("SIGTERM", cleanup);
-process.on("SIGINT", cleanup);
-
-/**
- * Main server startup function
- */
+// Main function for stdio interface (backwards compatibility)
 async function main() {
+  // Environment variable validation
+  const apiKey = process.env.trelloApiKey;
+  const token = process.env.trelloToken;
+  const boardId = process.env.trelloBoardId;
+
+  if (!apiKey || !token || !boardId) {
+    console.error(
+      "Environment variables trelloApiKey, trelloToken, and trelloBoardId are required"
+    );
+  }
+
   try {
+    const server = createServer({
+      config: {
+        apiKey: apiKey ?? "",
+        token: token ?? "",
+        boardId: boardId ?? "",
+      },
+    });
+
     // Set up communication with the MCP host using stdio transport
     const transport = new StdioServerTransport();
     await server.connect(transport);
@@ -116,7 +92,6 @@ async function main() {
   }
 }
 
-// Start the server
 main().catch((error) => {
   console.error("Fatal error in main():", error);
   process.exit(1);

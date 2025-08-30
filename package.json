@@ -1,6 +1,6 @@
 {
   "name": "mcp-trello",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "A Model Context Protocol server for Trello",
   "author": {
     "name": "Ben Hofferber",
@@ -19,25 +19,31 @@
   ],
   "scripts": {
     "prebuild": "npm run lint && npm run format",
-    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "prepublishOnly": "npm run build:stdio",
+    "build": "npm run build:http",
+    "build:stdio": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "build:http": "npx @smithery/cli build",
     "watch": "tsc --watch",
     "inspector": "npx @modelcontextprotocol/inspector node build/index.js",
-    "dev": "concurrently \"npm run watch\" \"npm run inspector\"",
+    "dev": "npx @smithery/cli dev",
+    "dev:stdio": "concurrently \"npm run watch\" \"npm run inspector\"",
     "debug": "node --inspect build/index.js",
     "debug:watch": "concurrently \"npm run watch\" \"npm run debug\"",
     "logs": "tail -n 20 -F ~/Library/Logs/Claude/mcp*.log",
     "clean": "rm -rf build",
-    "start": "node build/index.js",
+    "start": "npm run start:http",
+    "start:http": "node .smithery/index.cjs",
+    "start:stdio": "node build/index.js",
     "lint": "biome check ./src",
     "lint:fix": "biome check --apply ./src",
     "format": "biome format ./src",
-    "format:fix": "biome format --write ./src",
-    "smithery:build": "docker build -t mcp-trello -f Dockerfile.smithery .",
-    "smithery:run": "docker run -i --rm mcp-trello"
+    "format:fix": "biome format --write ./src"
   },
+  "module": "src/index.ts",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.9.0",
-    "@smithery/sdk": "latest",
+    "@modelcontextprotocol/sdk": "1.17.4",
+    "@smithery/sdk": "1.5.6",
+    "tsx": "^4.20.5",
     "axios": "^1.8.4",
     "zod": "^3.24.2"
   },

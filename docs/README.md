@@ -10,6 +10,8 @@ A Model Context Protocol (MCP) server that provides tools for interacting with T
 ## Features
 
 - **Full Trello Board Integration**: Interact with cards, lists, and board activities
+- **HTTP Streaming Interface**: Modern HTTP streaming with hot reloading for better development experience
+- **Backwards Compatibility**: Maintains support for traditional stdio interface
 - **Built-in Rate Limiting**: Respects Trello's API limits (300 requests/10s per API key, 100 requests/10s per token)
 - **Type-Safe Implementation**: Written in TypeScript with comprehensive type definitions
 - **Input Validation**: Robust validation for all API inputs using Zod schemas
@@ -271,16 +273,46 @@ pnpm install
 pnpm run build
 ```
 
-### Running in Development Mode
+### Development Commands
 
 ```bash
+# HTTP streaming development with hot reloading (recommended)
+pnpm run dev
+
+# Traditional stdio development mode
+pnpm run dev:stdio
+
+# Watch TypeScript compilation only
 pnpm run watch
+
+# Run with MCP inspector for debugging
+pnpm run inspector
 ```
 
-### Running with Debugging
+### Build Commands
 
 ```bash
-pnpm run inspector
+# Build HTTP streaming version (default)
+pnpm run build
+
+# Build HTTP streaming version explicitly
+pnpm run build:http
+
+# Build stdio version for backwards compatibility
+pnpm run build:stdio
+```
+
+### Deployment
+
+```bash
+# Start HTTP streaming server (default)
+pnpm start
+
+# Start HTTP streaming server explicitly
+pnpm run start:http
+
+# Start stdio server (backwards compatibility)
+pnpm run start:stdio
 ```
 
 ## Contributing
