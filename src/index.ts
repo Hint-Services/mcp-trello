@@ -14,20 +14,41 @@ import { z } from "zod";
 import { TrelloClient } from "./trello/client.js";
 
 // Configuration schema for HTTP streaming interface
+// All fields are optional - can use environment variables as fallbacks
 export const configSchema = z.object({
-  apiKey: z.string().describe("Trello API key from https://trello.com/app-key"),
-  token: z.string().describe("Trello token generated using your API key"),
+  apiKey: z
+    .string()
+    .optional()
+    .describe(
+      "Trello API key from https://trello.com/app-key (falls back to TRELLO_API_KEY env var)"
+    ),
+  token: z
+    .string()
+    .optional()
+    .describe(
+      "Trello token generated using your API key (falls back to TRELLO_TOKEN env var)"
+    ),
   boardId: z
     .string()
-    .describe("ID of the Trello board to interact with (found in board URL)"),
+    .optional()
+    .describe(
+      "ID of the Trello board to interact with (falls back to TRELLO_BOARD_ID env var). Optional for user-specific operations."
+    ),
 });
 
 // Factory function for HTTP streaming interface
 export default function createServer({
-  config,
+  config = {},
 }: {
-  config: z.infer<typeof configSchema>;
-}) {
+  config?: z.infer<typeof configSchema>;
+} = {}) {
+  // Merge config with environment variables (config takes precedence)
+  const finalConfig = {
+    apiKey: config?.apiKey ?? process.env.TRELLO_API_KEY ?? "",
+    token: config?.token ?? process.env.TRELLO_TOKEN ?? "",
+    boardId: config?.boardId ?? process.env.TRELLO_BOARD_ID ?? "",
+  };
+
   const server = new McpServer({
     name: "mcp-trello",
     version: "0.2.0",
@@ -39,9 +60,11 @@ export default function createServer({
     },
   });
 
-  // Initialize Trello client and register tools
-  const trelloClient = new TrelloClient(config);
+  // Initialize Trello client and register resources, tools, and prompts
+  const trelloClient = new TrelloClient(finalConfig);
+  trelloClient.registerTrelloResources(server);
   trelloClient.registerTrelloTools(server);
+  trelloClient.registerTrelloPrompts(server);
 
   return server;
 }
@@ -55,23 +78,30 @@ function logMessage(level: "info" | "warn" | "error", message: string) {
 
 // Main function for stdio interface (backwards compatibility)
 async function main() {
-  // Environment variable validation
-  const apiKey = process.env.trelloApiKey;
-  const token = process.env.trelloToken;
-  const boardId = process.env.trelloBoardId;
+  // Support both old and new environment variable names
+  const apiKey =
+    process.env.TRELLO_API_KEY ??
+    process.env.trelloApiKey ??
+    process.env.apiKey;
+  const token =
+    process.env.TRELLO_TOKEN ?? process.env.trelloToken ?? process.env.token;
+  const boardId =
+    process.env.TRELLO_BOARD_ID ??
+    process.env.trelloBoardId ??
+    process.env.boardId;
 
-  if (!apiKey || !token || !boardId) {
+  if (!apiKey || !token) {
     console.error(
-      "Environment variables trelloApiKey, trelloToken, and trelloBoardId are required"
+      "Warning: TRELLO_API_KEY and TRELLO_TOKEN environment variables not set. Tools will fail until credentials are provided."
     );
   }
 
   try {
     const server = createServer({
       config: {
-        apiKey: apiKey ?? "",
-        token: token ?? "",
-        boardId: boardId ?? "",
+        apiKey,
+        token,
+        boardId,
       },
     });
 
