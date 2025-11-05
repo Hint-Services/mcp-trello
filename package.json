@@ -22,7 +22,7 @@
     "prebuild": "npm run lint && npm run format",
     "prepublishOnly": "npm run build:stdio",
     "build": "npm run build:http",
-    "build:stdio": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "build:stdio": "tsc && node -e \"const fs = require('fs'); const path = require('path'); const file = 'build/index.js'; const content = fs.readFileSync(file, 'utf8'); if (!content.startsWith('#!')) { fs.writeFileSync(file, '#!/usr/bin/env node\\n' + content); } fs.chmodSync(file, '755');\"",
     "build:http": "npx @smithery/cli build",
     "watch": "tsc --watch",
     "inspector": "npx @modelcontextprotocol/inspector node build/index.js",
