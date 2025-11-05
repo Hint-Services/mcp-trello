@@ -2,6 +2,7 @@
   "name": "mcp-trello",
   "version": "0.2.0",
   "description": "A Model Context Protocol server for Trello",
+  "license": "MIT",
   "author": {
     "name": "Ben Hofferber",
     "url": "https://hint.services",

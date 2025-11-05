@@ -15,26 +15,28 @@ import { TrelloClient } from "./trello/client.js";
 
 // Configuration schema for HTTP streaming interface
 // All fields are optional - can use environment variables as fallbacks
-export const configSchema = z.object({
-  apiKey: z
-    .string()
-    .optional()
-    .describe(
-      "Trello API key from https://trello.com/app-key (falls back to TRELLO_API_KEY env var)"
-    ),
-  token: z
-    .string()
-    .optional()
-    .describe(
-      "Trello token generated using your API key (falls back to TRELLO_TOKEN env var)"
-    ),
-  boardId: z
-    .string()
-    .optional()
-    .describe(
-      "ID of the Trello board to interact with (falls back to TRELLO_BOARD_ID env var). Optional for user-specific operations."
-    ),
-});
+export const configSchema = z
+  .object({
+    apiKey: z
+      .string()
+      .optional()
+      .describe(
+        "Trello API key from https://trello.com/app-key (falls back to TRELLO_API_KEY env var)"
+      ),
+    token: z
+      .string()
+      .optional()
+      .describe(
+        "Trello token generated using your API key (falls back to TRELLO_TOKEN env var)"
+      ),
+    boardId: z
+      .string()
+      .optional()
+      .describe(
+        "ID of the Trello board to interact with (falls back to TRELLO_BOARD_ID env var). Optional for user-specific operations."
+      ),
+  })
+  .default({});
 
 // Factory function for HTTP streaming interface
 export default function createServer({
@@ -65,6 +67,8 @@ export default function createServer({
   trelloClient.registerTrelloResources(server);
   trelloClient.registerTrelloTools(server);
   trelloClient.registerTrelloPrompts(server);
+  // Must call addToolAnnotations AFTER registering tools (SDK 1.17.4 compatibility)
+  (trelloClient as any).addToolAnnotations(server);
 
   return server;
 }
