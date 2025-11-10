@@ -1,5 +1,4 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import axios, { type AxiosInstance } from "axios";
 import { z } from "zod";
 
@@ -9,54 +8,18 @@ import type { TrelloConfig } from "./types.js";
 export class TrelloClient {
   private axiosInstance: AxiosInstance;
   private rateLimiter;
-
-  private addToolAnnotations(server: McpServer) {
-    const toolAnnotations: Record<string, {
-      readOnlyHint?: boolean;
-      destructiveHint?: boolean;
-      idempotentHint?: boolean;
-    }> = {
-      // Read-only operations
-      getCardsByList: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-      getLists: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-      getRecentActivity: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-      getMyCards: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-
-      // Destructive operations
-      archiveCard: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
-      archiveList: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
-
-      // Non-destructive, idempotent operations
-      updateCard: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-      moveCard: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-      changeCardMembers: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-
-      // Non-destructive, non-idempotent operations
-      addCard: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-      addList: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    };
-
-    // Override tools/list handler to inject annotations
-    // Access the underlying Server instance for advanced operations
-    server.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      const tools = Array.from((server as any)._tools?.values() || []);
-      return {
-        tools: tools.map((tool: any) => ({
-          ...tool,
-          annotations: toolAnnotations[tool.name] || {},
-        })),
-      };
-    });
-  }
+  private boardId: string | undefined;
 
   constructor(private config: TrelloConfig) {
-    // Validate credentials at startup
+    // Use provided credentials or fall back to environment variables
     const apiKey = config.apiKey || process.env.TRELLO_API_KEY;
     const token = config.token || process.env.TRELLO_TOKEN;
+    this.boardId = config.boardId || process.env.TRELLO_BOARD_ID;
 
     if (!apiKey || !token) {
       throw new Error(
-        "Trello credentials not configured. Please set TRELLO_API_KEY and TRELLO_TOKEN environment variables or provide them in the config. Get your API key from https://trello.com/app-key"
+        "Trello credentials are required. Provide them via config or set TRELLO_API_KEY and TRELLO_TOKEN environment variables. " +
+          "Get your API key from https://trello.com/app-key"
       );
     }
 
@@ -87,8 +50,11 @@ export class TrelloClient {
           await new Promise((resolve) => setTimeout(resolve, 1000));
           return this.handleRequest(request);
         }
+        // Include more error details for debugging
+        const errorMessage = error.response?.data?.message || error.response?.data || error.message;
+        const url = error.config?.url || 'unknown';
         throw new Error(
-          `Trello API error: ${error.response?.data?.message ?? error.message}`
+          `Trello API error (${error.response?.status}): ${errorMessage} [URL: ${url}]`
         );
       }
       throw error;
@@ -96,31 +62,62 @@ export class TrelloClient {
   }
 
   registerTrelloResources(server: McpServer) {
-    // Resource for board lists
-    server.resource(
-      "Board Lists",
-      `trello://board/${this.config.boardId}/lists`,
-      { mimeType: "application/json", description: "All lists on the board" },
-      async () => {
-        const lists = await this.handleRequest(async () => {
-          const response = await this.axiosInstance.get(
-            `/boards/${this.config.boardId}/lists`
-          );
-          return response.data;
-        });
-        return {
-          contents: [
-            {
-              uri: `trello://board/${this.config.boardId}/lists`,
-              mimeType: "application/json",
-              text: JSON.stringify(lists, null, 2),
-            },
-          ],
-        };
-      }
-    );
+    // Only register board-specific resources if boardId is configured
+    if (this.boardId) {
+      // Resource for board lists
+      server.resource(
+        "Board Lists",
+        `trello://board/${this.boardId}/lists`,
+        { mimeType: "application/json", description: "All lists on the board" },
+        async () => {
+          const lists = await this.handleRequest(async () => {
+            const response = await this.axiosInstance.get(
+              `/boards/${this.boardId}/lists`
+            );
+            return response.data;
+          });
+          return {
+            contents: [
+              {
+                uri: `trello://board/${this.boardId}/lists`,
+                mimeType: "application/json",
+                text: JSON.stringify(lists, null, 2),
+              },
+            ],
+          };
+        }
+      );
 
-    // Resource for my cards
+      // Resource for recent activity
+      server.resource(
+        "Recent Activity",
+        `trello://board/${this.boardId}/activity`,
+        {
+          mimeType: "application/json",
+          description: "Recent activity on the board",
+        },
+        async () => {
+          const activity = await this.handleRequest(async () => {
+            const response = await this.axiosInstance.get(
+              `/boards/${this.boardId}/actions`,
+              { params: { limit: 50 } }
+            );
+            return response.data;
+          });
+          return {
+            contents: [
+              {
+                uri: `trello://board/${this.boardId}/activity`,
+                mimeType: "application/json",
+                text: JSON.stringify(activity, null, 2),
+              },
+            ],
+          };
+        }
+      );
+    }
+
+    // Resource for my cards (works without boardId)
     server.resource(
       "My Cards",
       "trello://me/cards",
@@ -144,34 +141,6 @@ export class TrelloClient {
         };
       }
     );
-
-    // Resource for recent activity
-    server.resource(
-      "Recent Activity",
-      `trello://board/${this.config.boardId}/activity`,
-      {
-        mimeType: "application/json",
-        description: "Recent activity on the board",
-      },
-      async () => {
-        const activity = await this.handleRequest(async () => {
-          const response = await this.axiosInstance.get(
-            `/boards/${this.config.boardId}/actions`,
-            { params: { limit: 50 } }
-          );
-          return response.data;
-        });
-        return {
-          contents: [
-            {
-              uri: `trello://board/${this.config.boardId}/activity`,
-              mimeType: "application/json",
-              text: JSON.stringify(activity, null, 2),
-            },
-          ],
-        };
-      }
-    );
   }
 
   registerTrelloPrompts(server: McpServer) {
@@ -180,7 +149,10 @@ export class TrelloClient {
       "Create a new Trello task/card with details",
       {
         taskName: z.string().describe("The name/title of the task"),
-        listName: z.string().optional().describe("The name of the list (optional)"),
+        listName: z
+          .string()
+          .optional()
+          .describe("The name of the list (optional)"),
       },
       async ({ taskName, listName }) => {
         const promptText = listName
@@ -220,24 +192,19 @@ export class TrelloClient {
       }
     );
 
-    server.prompt(
-      "my-tasks",
-      "View all tasks assigned to me",
-      {},
-      async () => {
-        return {
-          messages: [
-            {
-              role: "user",
-              content: {
-                type: "text",
-                text: "Please show all Trello cards assigned to me using the getMyCards tool. Organize them by due date and highlight any overdue items.",
-              },
+    server.prompt("my-tasks", "View all tasks assigned to me", {}, async () => {
+      return {
+        messages: [
+          {
+            role: "user",
+            content: {
+              type: "text",
+              text: "Please show all Trello cards assigned to me using the getMyCards tool. Organize them by due date and highlight any overdue items.",
             },
-          ],
-        };
-      }
-    );
+          },
+        ],
+      };
+    });
   }
 
   registerTrelloTools(server: McpServer) {
@@ -245,8 +212,11 @@ export class TrelloClient {
       "getCardsByList",
       "Get cards by list ID",
       {
-        listId: z.string().describe("The ID of the Trello list to get cards from"),
+        listId: z
+          .string()
+          .describe("The ID of the Trello list to get cards from"),
       },
+      { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
       async ({ listId }) => {
         const cards = await this.handleRequest(async () => {
           const response = await this.axiosInstance.get(
@@ -264,10 +234,11 @@ export class TrelloClient {
       "getLists",
       "Get all lists from the configured board",
       {},
+      { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
       async () => {
         const lists = await this.handleRequest(async () => {
           const response = await this.axiosInstance.get(
-            `/boards/${this.config.boardId}/lists`
+            `/boards/${this.boardId}/lists`
           );
           return response.data;
         });
@@ -286,10 +257,11 @@ export class TrelloClient {
           .optional()
           .describe("Maximum number of activity items to return (default: 10)"),
       },
+      { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
       async ({ limit = 10 }) => {
         const activity = await this.handleRequest(async () => {
           const response = await this.axiosInstance.get(
-            `/boards/${this.config.boardId}/actions`,
+            `/boards/${this.boardId}/actions`,
             {
               params: { limit },
             }
@@ -321,6 +293,7 @@ export class TrelloClient {
           .optional()
           .describe("Array of label IDs to add to the card"),
       },
+      { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
       async ({ listId, name, description, dueDate, labels }) => {
         const card = await this.handleRequest(async () => {
           const response = await this.axiosInstance.post("/cards", {
@@ -365,6 +338,7 @@ export class TrelloClient {
           .optional()
           .describe("New start date in ISO 8601 format"),
       },
+      { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
       async ({
         cardId,
         name,
@@ -400,8 +374,11 @@ export class TrelloClient {
         boardId: z
           .string()
           .optional()
-          .describe("The ID of the destination board (if moving to a different board)"),
+          .describe(
+            "The ID of the destination board (if moving to a different board)"
+          ),
       },
+      { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
       async ({ cardId, listId, boardId }) => {
         const card = await this.handleRequest(async () => {
           const response = await this.axiosInstance.put(`/cards/${cardId}`, {
@@ -425,6 +402,7 @@ export class TrelloClient {
           .array(z.string())
           .describe("Array of member IDs to assign to the card"),
       },
+      { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
       async ({ cardId, members }) => {
         const card = await this.handleRequest(async () => {
           const response = await this.axiosInstance.put(`/cards/${cardId}`, {
@@ -444,6 +422,7 @@ export class TrelloClient {
       {
         cardId: z.string().describe("The ID of the card to archive"),
       },
+      { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
       async ({ cardId }) => {
         const card = await this.handleRequest(async () => {
           const response = await this.axiosInstance.put(`/cards/${cardId}`, {
@@ -463,11 +442,12 @@ export class TrelloClient {
       {
         name: z.string().describe("The name of the new list"),
       },
+      { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
       async ({ name }) => {
         const list = await this.handleRequest(async () => {
           const response = await this.axiosInstance.post("/lists", {
             name,
-            idBoard: this.config.boardId,
+            idBoard: this.boardId,
           });
           return response.data;
         });
@@ -483,6 +463,7 @@ export class TrelloClient {
       {
         listId: z.string().describe("The ID of the list to archive"),
       },
+      { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
       async ({ listId }) => {
         const list = await this.handleRequest(async () => {
           const response = await this.axiosInstance.put(
@@ -503,6 +484,7 @@ export class TrelloClient {
       "getMyCards",
       "Get cards assigned to the authenticated user",
       {},
+      { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
       async () => {
         const cards = await this.handleRequest(async () => {
           const response = await this.axiosInstance.get("/members/me/cards");

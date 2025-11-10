@@ -1,7 +1,7 @@
 export interface TrelloConfig {
-  apiKey: string;
-  token: string;
-  boardId: string;
+  apiKey?: string;
+  token?: string;
+  boardId?: string;
 }
 
 export interface TrelloCard {

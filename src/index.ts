@@ -8,6 +8,7 @@
  * https://modelcontextprotocol.io
  */
 
+import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -44,13 +45,6 @@ export default function createServer({
 }: {
   config?: z.infer<typeof configSchema>;
 } = {}) {
-  // Merge config with environment variables (config takes precedence)
-  const finalConfig = {
-    apiKey: config?.apiKey ?? process.env.TRELLO_API_KEY ?? "",
-    token: config?.token ?? process.env.TRELLO_TOKEN ?? "",
-    boardId: config?.boardId ?? process.env.TRELLO_BOARD_ID ?? "",
-  };
-
   const server = new McpServer({
     name: "mcp-trello",
     version: "0.2.0",
@@ -62,63 +56,42 @@ export default function createServer({
     },
   });
 
-  // Initialize Trello client and register resources, tools, and prompts
-  const trelloClient = new TrelloClient(finalConfig);
-  trelloClient.registerTrelloResources(server);
-  trelloClient.registerTrelloTools(server);
-  trelloClient.registerTrelloPrompts(server);
-  // Must call addToolAnnotations AFTER registering tools (SDK 1.17.4 compatibility)
-  (trelloClient as any).addToolAnnotations(server);
+  // Create TrelloClient with provided config
+  const trelloClient = new TrelloClient(config);
+
+  // Register Trello tools, resources, and prompts
+  try {
+    trelloClient.registerTrelloResources(server);
+    trelloClient.registerTrelloTools(server);
+    trelloClient.registerTrelloPrompts(server);
+    console.error("[INFO] Successfully registered all Trello tools");
+  } catch (error) {
+    console.error(
+      `[ERROR] Failed to register tools: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+    throw error;
+  }
 
   return server;
 }
 
-/**
- * Helper function to send log messages to the client
- */
-function logMessage(level: "info" | "warn" | "error", message: string) {
-  console.error(`[${level.toUpperCase()}] ${message}`);
-}
-
 // Main function for stdio interface (backwards compatibility)
 async function main() {
-  // Support both old and new environment variable names
-  const apiKey =
-    process.env.TRELLO_API_KEY ??
-    process.env.trelloApiKey ??
-    process.env.apiKey;
-  const token =
-    process.env.TRELLO_TOKEN ?? process.env.trelloToken ?? process.env.token;
-  const boardId =
-    process.env.TRELLO_BOARD_ID ??
-    process.env.trelloBoardId ??
-    process.env.boardId;
-
-  if (!apiKey || !token) {
-    console.error(
-      "Warning: TRELLO_API_KEY and TRELLO_TOKEN environment variables not set. Tools will fail until credentials are provided."
-    );
-  }
+  // Config will automatically use environment variables
+  const server = createServer();
 
   try {
-    const server = createServer({
-      config: {
-        apiKey,
-        token,
-        boardId,
-      },
-    });
-
     // Set up communication with the MCP host using stdio transport
     const transport = new StdioServerTransport();
     await server.connect(transport);
 
-    logMessage("info", "MCP Server started successfully");
+    console.error("[INFO] MCP Server started successfully");
     console.error("MCP Server running on stdio transport");
   } catch (error) {
-    logMessage(
-      "error",
-      `Failed to start server: ${
+    console.error(
+      `[ERROR] Failed to start server: ${
         error instanceof Error ? error.message : "Unknown error"
       }`
     );
@@ -126,7 +99,39 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error("Fatal error in main():", error);
-  process.exit(1);
-});
+// Only run main if this file is executed directly (not imported as a module)
+// This allows HTTP servers to import createServer without requiring env vars
+// When run via npx or as a binary, process.argv[1] should match this file
+const isMainModule = (() => {
+  if (!process.argv[1]) return false;
+
+  try {
+    const currentFile = fileURLToPath(import.meta.url);
+    const execFile = process.argv[1];
+
+    // Normalize paths for comparison
+    const normalizePath = (p: string) => p.replace(/\\/g, "/");
+    const normalizedCurrent = normalizePath(currentFile);
+    const normalizedExec = normalizePath(execFile);
+
+    // Check exact match or if execFile contains the filename
+    return (
+      normalizedCurrent === normalizedExec ||
+      normalizedExec.endsWith("/index.js") ||
+      normalizedExec.includes("mcp-trello")
+    );
+  } catch {
+    // Fallback: if execFile contains index.js or mcp-trello, assume main module
+    return (
+      process.argv[1].includes("index.js") ||
+      process.argv[1].includes("mcp-trello")
+    );
+  }
+})();
+
+if (isMainModule) {
+  main().catch((error) => {
+    console.error("Fatal error in main():", error);
+    process.exit(1);
+  });
+}
