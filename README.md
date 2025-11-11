@@ -1,5 +1,6 @@
 [![smithery badge](https://smithery.ai/badge/@Hint-Services/mcp-trello)](https://smithery.ai/server/@Hint-Services/mcp-trello)
 [![npm version](https://img.shields.io/npm/v/mcp-trello)](https://www.npmjs.com/package/mcp-trello)
+[![npm downloads](https://img.shields.io/npm/dm/mcp-trello)](https://www.npmjs.com/package/mcp-trello)
 
 # MCP Trello
 
