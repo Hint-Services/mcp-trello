@@ -44,8 +44,11 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.17.4",
     "@smithery/sdk": "1.7.4",
-    "tsx": "^4.20.5",
     "axios": "^1.8.4",
+    "chalk": "^5.3.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "tsx": "^4.20.5",
     "zod": "^3.24.2"
   },
   "devDependencies": {

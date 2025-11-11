@@ -2,6 +2,6 @@
 
 name: "@Hint-Services/mcp-trello"
 description: "A Model Context Protocol server for Trello"
-version: "0.2.0"
+version: "0.3.1"
 
 runtime: "typescript"
