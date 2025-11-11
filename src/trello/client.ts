@@ -208,6 +208,49 @@ export class TrelloClient {
         ],
       };
     });
+
+    server.prompt(
+      "card-discussion",
+      "View a card with all its comments and discussion",
+      {
+        cardId: z.string().describe("The ID of the card to view"),
+      },
+      async ({ cardId }) => {
+        return {
+          messages: [
+            {
+              role: "user",
+              content: {
+                type: "text",
+                text: `Please retrieve the card "${cardId}" using the getCard tool with includeComments set to true. Show the card details and format all comments in a readable discussion format with timestamps and authors.`,
+              },
+            },
+          ],
+        };
+      }
+    );
+
+    server.prompt(
+      "comment-on-card",
+      "Add a comment to a specific card",
+      {
+        cardId: z.string().describe("The ID of the card to comment on"),
+        comment: z.string().describe("The comment text to add"),
+      },
+      async ({ cardId, comment }) => {
+        return {
+          messages: [
+            {
+              role: "user",
+              content: {
+                type: "text",
+                text: `Please add the following comment to card "${cardId}" using the addComment tool: "${comment}"`,
+              },
+            },
+          ],
+        };
+      }
+    );
   }
 
   registerTrelloTools(server: McpServer) {
@@ -223,6 +266,33 @@ export class TrelloClient {
         });
         return {
           content: [{ type: "text", text: JSON.stringify(boards, null, 2) }],
+        };
+      }
+    );
+
+    server.tool(
+      "getCard",
+      "Get a specific card by ID with optional comments",
+      {
+        cardId: z.string().describe("The ID of the card to retrieve"),
+        includeComments: z
+          .boolean()
+          .optional()
+          .describe("Whether to include comments on the card (default: false)"),
+      },
+      { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+      async ({ cardId, includeComments = false }) => {
+        const card = await this.handleRequest(async () => {
+          const params = includeComments
+            ? { actions: "commentCard" }
+            : undefined;
+          const response = await this.axiosInstance.get(`/cards/${cardId}`, {
+            params,
+          });
+          return response.data;
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(card, null, 2) }],
         };
       }
     );
@@ -512,6 +582,78 @@ export class TrelloClient {
         });
         return {
           content: [{ type: "text", text: JSON.stringify(list) }],
+        };
+      }
+    );
+
+    server.tool(
+      "addComment",
+      "Add a comment to a card",
+      {
+        cardId: z.string().describe("The ID of the card to comment on"),
+        text: z.string().describe("The text content of the comment"),
+      },
+      { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+      async ({ cardId, text }) => {
+        const comment = await this.handleRequest(async () => {
+          const response = await this.axiosInstance.post(
+            `/cards/${cardId}/actions/comments`,
+            null,
+            { params: { text } }
+          );
+          return response.data;
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(comment, null, 2) }],
+        };
+      }
+    );
+
+    server.tool(
+      "updateComment",
+      "Update the text of an existing comment",
+      {
+        cardId: z.string().describe("The ID of the card"),
+        commentId: z
+          .string()
+          .describe("The ID of the comment action to update"),
+        text: z.string().describe("The new text content for the comment"),
+      },
+      { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+      async ({ cardId, commentId, text }) => {
+        const comment = await this.handleRequest(async () => {
+          const response = await this.axiosInstance.put(
+            `/cards/${cardId}/actions/${commentId}/comments`,
+            null,
+            { params: { text } }
+          );
+          return response.data;
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(comment, null, 2) }],
+        };
+      }
+    );
+
+    server.tool(
+      "deleteComment",
+      "Delete a comment from a card",
+      {
+        cardId: z.string().describe("The ID of the card"),
+        commentId: z
+          .string()
+          .describe("The ID of the comment action to delete"),
+      },
+      { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+      async ({ cardId, commentId }) => {
+        const result = await this.handleRequest(async () => {
+          const response = await this.axiosInstance.delete(
+            `/cards/${cardId}/actions/${commentId}/comments`
+          );
+          return response.data;
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         };
       }
     );
