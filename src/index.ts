@@ -47,7 +47,7 @@ export default function createServer({
 } = {}) {
   const server = new McpServer({
     name: "mcp-trello",
-    version: "0.2.0",
+    version: "0.3.1",
     capabilities: {
       tools: {},
       resources: {},

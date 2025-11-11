@@ -23,10 +23,14 @@ A Model Context Protocol (MCP) server that provides tools for interacting with T
 
 MCP Trello provides the following tools for interacting with Trello:
 
+### Board Management
+
+- **getMyBoards**: Retrieve all boards for the authenticated user (useful for finding board IDs)
+
 ### Card Management
 
 - **getCardsByList**: Fetch all cards from a specific list
-- **getMyCards**: Fetch all cards assigned to the current user
+- **getMyCards**: Fetch all cards assigned to the current user (works without board ID)
 - **addCard**: Add a new card to a specified list
 - **updateCard**: Update an existing card's details (name, description, due dates, labels, position)
 - **moveCard**: Move a card to a different list or board
@@ -35,13 +39,13 @@ MCP Trello provides the following tools for interacting with Trello:
 
 ### List Management
 
-- **getLists**: Retrieve all lists from the configured board
-- **addList**: Add a new list to the board
+- **getLists**: Retrieve all lists from the configured board (requires board ID)
+- **addList**: Add a new list to the board (requires board ID)
 - **archiveList**: Send a list to the archive
 
 ### Board Information
 
-- **getRecentActivity**: Fetch recent activity on the board
+- **getRecentActivity**: Fetch recent activity on the board (requires board ID)
 
 ## Project Structure
 
@@ -107,11 +111,30 @@ Add the server to your MCP settings file with the following configuration:
 }
 ```
 
-### Required Environment Variables
+### Environment Variables
 
+#### Required
 - `trelloApiKey`: Your Trello API key (get from https://trello.com/app-key)
 - `trelloToken`: Your Trello token (generate using your API key)
-- `trelloBoardId`: ID of the Trello board to interact with (found in board URL)
+
+#### Optional
+- `trelloBoardId`: Full 24-character ID of the Trello board to interact with (required for board-specific operations)
+
+### Finding Your Board ID
+
+**Important:** The board ID is NOT the short code you see in the Trello URL.
+
+For example, if your board URL is `https://trello.com/b/a1b2c3d4/my-board`, the short code `a1b2c3d4` is **not** the board ID.
+
+To find your board's full 24-character ID:
+
+1. Configure the server with only your API key and token (omit `trelloBoardId` initially)
+2. Use the `getMyBoards` tool to list all your boards
+3. Find your board in the results and copy the `id` field (not `shortLink`)
+4. The board ID will look like: `507f1f77bcf86cd799439011` (24 characters)
+5. Add this full ID to your configuration as `trelloBoardId`
+
+**Note:** Some tools like `getMyCards` and `getMyBoards` work without a board ID configured. Board-specific tools like `getLists`, `addList`, and `getRecentActivity` require a valid board ID.
 
 ## For Developers
 

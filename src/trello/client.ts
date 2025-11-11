@@ -51,8 +51,11 @@ export class TrelloClient {
           return this.handleRequest(request);
         }
         // Include more error details for debugging
-        const errorMessage = error.response?.data?.message || error.response?.data || error.message;
-        const url = error.config?.url || 'unknown';
+        const errorMessage =
+          error.response?.data?.message ||
+          error.response?.data ||
+          error.message;
+        const url = error.config?.url || "unknown";
         throw new Error(
           `Trello API error (${error.response?.status}): ${errorMessage} [URL: ${url}]`
         );
@@ -209,6 +212,22 @@ export class TrelloClient {
 
   registerTrelloTools(server: McpServer) {
     server.tool(
+      "getMyBoards",
+      "Get all boards for the authenticated user (useful for finding board IDs)",
+      {},
+      { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+      async () => {
+        const boards = await this.handleRequest(async () => {
+          const response = await this.axiosInstance.get("/members/me/boards");
+          return response.data;
+        });
+        return {
+          content: [{ type: "text", text: JSON.stringify(boards, null, 2) }],
+        };
+      }
+    );
+
+    server.tool(
       "getCardsByList",
       "Get cards by list ID",
       {
@@ -296,12 +315,14 @@ export class TrelloClient {
       { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
       async ({ listId, name, description, dueDate, labels }) => {
         const card = await this.handleRequest(async () => {
-          const response = await this.axiosInstance.post("/cards", {
-            idList: listId,
-            name,
-            desc: description,
-            due: dueDate,
-            idLabels: labels,
+          const response = await this.axiosInstance.post("/cards", null, {
+            params: {
+              idList: listId,
+              name,
+              desc: description,
+              due: dueDate,
+              idLabels: labels?.join(","),
+            },
           });
           return response.data;
         });
@@ -444,10 +465,25 @@ export class TrelloClient {
       },
       { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
       async ({ name }) => {
+        if (!this.boardId) {
+          throw new Error(
+            "Board ID is not configured. Please set TRELLO_BOARD_ID environment variable or provide boardId in the configuration."
+          );
+        }
+
+        // Validate board ID format (should be 24 characters)
+        if (this.boardId.length !== 24) {
+          throw new Error(
+            `Invalid board ID format: "${this.boardId}" (${this.boardId.length} characters). Trello board IDs must be 24 characters long. If you're using the short URL (like 'HIhpH6Zp'), please use the getMyBoards tool to find the full board ID.`
+          );
+        }
+
         const list = await this.handleRequest(async () => {
-          const response = await this.axiosInstance.post("/lists", {
-            name,
-            idBoard: this.boardId,
+          const response = await this.axiosInstance.post("/lists", null, {
+            params: {
+              name,
+              idBoard: this.boardId,
+            },
           });
           return response.data;
         });
